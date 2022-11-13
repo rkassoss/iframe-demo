@@ -1,26 +1,88 @@
-<html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<head>
+    <!-- EnigmaJS -->
     <script src="https://unpkg.com/enigma.js/enigma.min.js"></script>
-</head>
 
-<body>
-  <h1>Simple demo - iframe from Qlik SaaS tenant</h1>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 
-    <div id="main">
-        <div id="message"></div>
-        <iframe id='qlik_frame' style='border:none;width:100%;height:900px;'></iframe>
+    <title>iFrame Demo - Qlik SaaS</title>
+
+    <style>
+      body {
+        margin-top: 90px;
+      }
+      .navbar {
+        position: fixed;
+        width: 100%;
+        top: 0;
+        border-bottom: 2px solid rgb(0 151 214);
+      }
+    </style>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <a class ="navbar-brand" href="https://cccis.com" title="CCC Intelligent Solutions"><img src="https://cccis.com/wp-content/uploads/2020/10/CCC-logo.png" alt="CCC logo blue" title="CCC" width="116" height="" class="site-logo-image entered lazyloaded" data-lazy-src="https://cccis.com/wp-content/uploads/2020/10/CCC-logo.png" data-ll-status="loaded"><noscript><img  src="https://cccis.com/wp-content/uploads/2020/10/CCC-logo.png" alt="CCC logo blue" title="CCC" width="116" height="" class="site-logo-image"></noscript></a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+        <div class="navbar-nav">
+          <a id="sales" sheetid="XuWLHFK" appid="d6152f1d-c366-4471-8aa6-7ae473e63f59" class="nav-item nav-link active" href="#">Sales Dashboard <span class="sr-only">(current)</span></a>
+          <a id="travel" appid="3e76f674-487b-4d47-a284-91b33dad3f0c" sheetid="PSQhqB" class="nav-item nav-link" href="#">Travel Insights</a>
+          <a id="top-10" appid="1cd5dc50-80a1-4d6f-893b-898a806d76c8" sheetid="69d87dbe-1023-40eb-9903-312d9ffef676" class="nav-item nav-link" href="#">Top 10 Viz Tips</a>
+        </div>
+      </div>
+    </nav>
+    <div class="container-fluid">
+      <h3 id="pagetitle">Sales Dashboard</h3>
+
+      <div id="main">
+          <div id="message"></div>
+          <iframe id='qlik_frame' style='border:none;width:100%;height:900px;'></iframe>
+      </div>
     </div>
 
     <script>
+
+        // NAV
+
+        document.addEventListener('click', async function (event) {
+
+          // If the clicked element doesn't have the right selector, bail
+          if (!event.target.matches('.nav-item')) return;
+
+          // Don't follow the link
+          event.preventDefault();
+
+          document.querySelector("a.active").classList.toggle("active");
+          event.target.classList.toggle("active");
+
+          // Log the clicked element in the console
+          APPID = event.target.getAttribute("appid");
+          SHEETID = event.target.getAttribute("sheetid");
+          PAGETITLE = event.target.textContent;
+
+          console.log(event.target, APPID, SHEETID, PAGETITLE);
+          document.getElementById("pagetitle").textContent = PAGETITLE;
+          renderSingleIframe('qlik_frame', APPID, SHEETID, "UPS Theme", IDENTITY);
+
+        }, false);
 
         //    CONFIGURATION
 
         const TENANT = 'kassovitz.us.qlikcloud.com';
         const WEBINTEGRATIONID = '57dm78_Ma_zMlX-y9A-wcm1D0jLoDy7W';
-        const APPID = 'd6152f1d-c366-4471-8aa6-7ae473e63f59';
-        const SHEETID = 'XuWLHFK';
+        let APPID = 'd6152f1d-c366-4471-8aa6-7ae473e63f59';
+        let SHEETID = 'XuWLHFK';
         const IDENTITY = '<identity>';
+        let PAGETITLE = 'SALES Dashboard';
 
         //    MAIN
 
@@ -30,12 +92,13 @@
             const [session, enigmaApp] = await connectEnigma(qcsHeaders, APPID, IDENTITY);
             handleDisconnect(session);
             const theme = await getTheme(enigmaApp);
+            console.log(theme);
             renderSingleIframe('qlik_frame', APPID, SHEETID, theme, IDENTITY);
             const message = 'Session will be automatically closed in 10 seconds to showcase the handling.';
-            document.getElementById('message').innerHTML = message; // remove this after testing
-            setTimeout(() => { // remove this after testing
-                session.close();
-            }, "10000")
+            // document.getElementById('message').innerHTML = message; // remove this after testing
+            // setTimeout(() => { // remove this after testing
+            //     session.close();
+            // }, "10000")
         })();
 
         //    LOGIN
@@ -171,13 +234,19 @@
         //    HELPER FUNCTION TO GENERATE IFRAME
 
         function renderSingleIframe(frameId, appId, sheetId, theme, identity) {
-            const frameUrl = `https://${TENANT}/single/?appid=${appId}&sheet=${sheetId}&theme=${theme}&identity=${identity}&opt=ctxmenu,currsel`;
+            console.log(theme);
+            const frameUrl = `https://${TENANT}/sense/app/${appId}/sheet/${sheetId}&theme=${theme}&identity=${identity}&opt=ctxmenu,currsel`; // bypass the single configurator endpoint
+            // const frameUrl = `https://${TENANT}/single/?appid=${appId}&sheet=${sheetId}&theme=${theme}&identity=${identity}&opt=ctxmenu,currsel`;
             document.getElementById(frameId).setAttribute('src', frameUrl); // replace with own handling
         }
 
 
     </script>
 
-</body>
-
+    <!-- Bootstrap JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+  </body>
 </html>
